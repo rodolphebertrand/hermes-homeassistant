@@ -9,10 +9,12 @@ from homeassistant.core import HomeAssistant
 
 from .api_client import HermesApiClient
 from .const import (
+    CONF_AGENT,
     CONF_API_KEY,
     CONF_HOST,
     CONF_PORT,
     CONF_TIMEOUT,
+    DEFAULT_AGENT,
     DEFAULT_TIMEOUT,
     DOMAIN,
 )
@@ -32,6 +34,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         port=data[CONF_PORT],
         api_key=data.get(CONF_API_KEY),
         timeout=data.get(CONF_TIMEOUT, DEFAULT_TIMEOUT),
+        agent=data.get(CONF_AGENT, DEFAULT_AGENT),
     )
 
     hass.data.setdefault(DOMAIN, {})[entry.entry_id] = client

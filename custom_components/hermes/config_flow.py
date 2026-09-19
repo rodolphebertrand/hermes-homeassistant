@@ -12,12 +12,15 @@ from homeassistant.data_entry_flow import FlowResult
 
 from .api_client import HermesApiClient
 from .const import (
+    AVAILABLE_AGENTS,
+    CONF_AGENT,
     CONF_API_KEY,
     CONF_HOST,
     CONF_PORT,
     CONF_STRIP_EMOJIS,
     CONF_TIMEOUT,
     CONF_TTS_MAX_CHARS,
+    DEFAULT_AGENT,
     DEFAULT_HOST,
     DEFAULT_PORT,
     DEFAULT_STRIP_EMOJIS,
@@ -42,6 +45,7 @@ async def _validate_connection(hass: HomeAssistant, data: dict[str, Any]) -> Non
         port=data[CONF_PORT],
         api_key=data.get(CONF_API_KEY),
         timeout=10,
+        agent=data.get(CONF_AGENT, DEFAULT_AGENT),
     )
     await client.health()
 
@@ -62,6 +66,7 @@ class HermesConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             )
             self._abort_if_unique_id_configured()
 
+            agent = user_input.get(CONF_AGENT, DEFAULT_AGENT)
             try:
                 await _validate_connection(self.hass, user_input)
             except HermesAuthenticationError:
@@ -69,7 +74,8 @@ class HermesConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             except HermesTimeoutError:
                 errors["base"] = "timeout"
             except HermesConnectionError:
-                errors["base"] = "cannot_connect"
+                # A 404 from /p/<agent>/health means the agent does not exist.
+                errors["base"] = "unknown_agent" if agent != "default" else "cannot_connect"
             except Exception:  # pylint: disable=broad-except
                 _LOGGER.exception("Unexpected error during setup")
                 errors["base"] = "unknown"
@@ -85,6 +91,7 @@ class HermesConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                     vol.Required(CONF_PORT, default=DEFAULT_PORT): vol.All(
                         int, vol.Range(min=1, max=65535)
                     ),
+                    vol.Required(CONF_AGENT, default=DEFAULT_AGENT): vol.In(AVAILABLE_AGENTS),
                     vol.Optional(CONF_API_KEY): str,
                     vol.Optional(CONF_TIMEOUT, default=DEFAULT_TIMEOUT): vol.All(
                         int, vol.Range(min=5, max=300)
@@ -136,6 +143,7 @@ class HermesOptionsFlow(config_entries.OptionsFlow):
         current = {**self.config_entry.data, **self.config_entry.options}
 
         if user_input is not None:
+            agent = user_input.get(CONF_AGENT, DEFAULT_AGENT)
             try:
                 await _validate_connection(self.hass, {**current, **user_input})
             except HermesAuthenticationError:
@@ -143,7 +151,7 @@ class HermesOptionsFlow(config_entries.OptionsFlow):
             except HermesTimeoutError:
                 errors["base"] = "timeout"
             except HermesConnectionError:
-                errors["base"] = "cannot_connect"
+                errors["base"] = "unknown_agent" if agent != "default" else "cannot_connect"
             except Exception:  # pylint: disable=broad-except
                 _LOGGER.exception("Unexpected error")
                 errors["base"] = "unknown"
@@ -165,6 +173,10 @@ class HermesOptionsFlow(config_entries.OptionsFlow):
                     vol.Required(
                         CONF_PORT, default=current.get(CONF_PORT, DEFAULT_PORT)
                     ): vol.All(int, vol.Range(min=1, max=65535)),
+                    vol.Required(
+                        CONF_AGENT,
+                        default=current.get(CONF_AGENT, DEFAULT_AGENT),
+                    ): vol.In(AVAILABLE_AGENTS),
                     vol.Optional(
                         CONF_API_KEY, default=current.get(CONF_API_KEY, "")
                     ): str,

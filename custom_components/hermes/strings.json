@@ -7,6 +7,7 @@
         "data": {
           "host": "Host",
           "port": "Port",
+          "agent": "Agent",
           "api_key": "API Key",
           "timeout": "Timeout (seconds)"
         }
@@ -23,6 +24,7 @@
       "cannot_connect": "Unable to connect to Hermes. Check the host and port.",
       "invalid_auth": "Invalid API key.",
       "timeout": "Connection timed out.",
+      "unknown_agent": "This agent does not exist on the Hermes server. Check AVAILABLE_AGENTS in const.py.",
       "unknown": "Unexpected error."
     },
     "abort": {
@@ -36,6 +38,7 @@
         "data": {
           "host": "Host",
           "port": "Port",
+          "agent": "Agent",
           "api_key": "API Key",
           "timeout": "Timeout (seconds)",
           "strip_emojis": "Strip emojis from TTS",
@@ -47,6 +50,7 @@
       "cannot_connect": "Unable to connect to Hermes. Check the host and port.",
       "invalid_auth": "Invalid API key.",
       "timeout": "Connection timed out.",
+      "unknown_agent": "This agent does not exist on the Hermes server. Check AVAILABLE_AGENTS in const.py.",
       "unknown": "Unexpected error."
     }
   }
