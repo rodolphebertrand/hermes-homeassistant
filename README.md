@@ -30,7 +30,7 @@ Restart the Hermes gateway.
 ## Installation via HACS
 
 1. In HACS, go to **Integrations** → **Custom repositories**
-2. Add `https://github.com/ddrayne/hermes-homeassistant` as an **Integration**
+2. Add `https://github.com/rodolphebertrand/hermes-homeassistant` as an **Integration**
 3. Install **Hermes Voice Assistant**
 4. Restart Home Assistant
 
