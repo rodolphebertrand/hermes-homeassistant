@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import asyncio
 import logging
+import time
 from typing import Any
 
 import aiohttp
@@ -28,6 +29,7 @@ class HermesApiClient:
         api_key: str | None,
         timeout: int,
         agent: str | None = None,
+        session_idle_minutes: int = 30,
     ) -> None:
         self._hass = hass
         self._base_url = f"http://{host}:{port}"
@@ -36,6 +38,26 @@ class HermesApiClient:
         self._agent = (agent or "").strip()
         # "default" (or empty) = no /p/<agent>/ prefix (gateway main profile).
         self._prefix = f"/p/{self._agent}" if self._agent and self._agent != "default" else ""
+        # Session continuity: HA conversation_id -> (Hermes session id, last-used epoch).
+        self._idle_ttl = max(0, session_idle_minutes) * 60
+        self._sessions: dict[str, tuple[str, float]] = {}
+
+    def _pop_session(self, conversation_id: str | None) -> str | None:
+        """Valid (not idle-expired) Hermes session id for a HA conversation, if any."""
+        if not conversation_id or self._idle_ttl <= 0:
+            return None
+        entry = self._sessions.get(conversation_id)
+        if entry is None:
+            return None
+        session_id, last_used = entry
+        if time.monotonic() - last_used > self._idle_ttl:
+            self._sessions.pop(conversation_id, None)
+            return None
+        return session_id
+
+    def _note_session(self, conversation_id: str | None, session_id: str | None) -> None:
+        if conversation_id and session_id:
+            self._sessions[conversation_id] = (session_id, time.monotonic())
 
     @property
     def _api_url(self) -> str:
@@ -96,14 +118,21 @@ class HermesApiClient:
             "stream": False,
         }
 
-        if conversation_id:
-            payload["conversation"] = conversation_id
+        # Session continuity: resume the Hermes session bound to this HA
+        # conversation (X-Hermes-Session-Id header) instead of starting a
+        # brand-new session for every voice question.
+        hermes_session_id = self._pop_session(conversation_id)
+
+        request_headers = dict(self._headers)
+        if hermes_session_id:
+            request_headers["X-Hermes-Session-Id"] = hermes_session_id
+        new_session_id: str | None = None
 
         try:
             async with aiohttp.ClientSession() as session:
                 async with session.post(
                     f"{self._api_url}/v1/chat/completions",
-                    headers=self._headers,
+                    headers=request_headers,
                     json=payload,
                     timeout=aiohttp.ClientTimeout(total=self._timeout),
                 ) as resp:
@@ -113,6 +142,9 @@ class HermesApiClient:
                         body = await resp.text()
                         raise HermesConnectionError(f"HTTP {resp.status}: {body}")
                     data = await resp.json()
+                    # Track the session the server assigned (first turn) or
+                    # confirmed (continuation) so the next turn resumes it.
+                    new_session_id = resp.headers.get("X-Hermes-Session-Id")
 
         except asyncio.TimeoutError as err:
             raise HermesTimeoutError("Request timed out") from err
@@ -125,3 +157,6 @@ class HermesApiClient:
             return data["choices"][0]["message"]["content"]
         except (KeyError, IndexError) as err:
             raise HermesConnectionError(f"Unexpected response format: {data}") from err
+        finally:
+            # Remember the session for the next turn of this HA conversation.
+            self._note_session(conversation_id, new_session_id)

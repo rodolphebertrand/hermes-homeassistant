@@ -16,7 +16,8 @@
         "title": "Speech Options",
         "data": {
           "strip_emojis": "Strip emojis from TTS",
-          "tts_max_chars": "Max TTS characters (0 = unlimited)"
+          "tts_max_chars": "Max TTS characters (0 = unlimited)",
+          "session_idle_minutes": "Session idle timeout (minutes, 0 = no continuity)"
         }
       }
     },
@@ -42,7 +43,8 @@
           "api_key": "API Key",
           "timeout": "Timeout (seconds)",
           "strip_emojis": "Strip emojis from TTS",
-          "tts_max_chars": "Max TTS characters (0 = unlimited)"
+          "tts_max_chars": "Max TTS characters (0 = unlimited)",
+          "session_idle_minutes": "Session idle timeout (minutes, 0 = no continuity)"
         }
       }
     },

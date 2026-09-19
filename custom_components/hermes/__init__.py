@@ -13,8 +13,10 @@ from .const import (
     CONF_API_KEY,
     CONF_HOST,
     CONF_PORT,
+    CONF_SESSION_IDLE_MINUTES,
     CONF_TIMEOUT,
     DEFAULT_AGENT,
+    DEFAULT_SESSION_IDLE_MINUTES,
     DEFAULT_TIMEOUT,
     DOMAIN,
 )
@@ -35,6 +37,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         api_key=data.get(CONF_API_KEY),
         timeout=data.get(CONF_TIMEOUT, DEFAULT_TIMEOUT),
         agent=data.get(CONF_AGENT, DEFAULT_AGENT),
+        session_idle_minutes=data.get(CONF_SESSION_IDLE_MINUTES, DEFAULT_SESSION_IDLE_MINUTES),
     )
 
     hass.data.setdefault(DOMAIN, {})[entry.entry_id] = client

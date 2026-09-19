@@ -17,12 +17,14 @@ from .const import (
     CONF_API_KEY,
     CONF_HOST,
     CONF_PORT,
+    CONF_SESSION_IDLE_MINUTES,
     CONF_STRIP_EMOJIS,
     CONF_TIMEOUT,
     CONF_TTS_MAX_CHARS,
     DEFAULT_AGENT,
     DEFAULT_HOST,
     DEFAULT_PORT,
+    DEFAULT_SESSION_IDLE_MINUTES,
     DEFAULT_STRIP_EMOJIS,
     DEFAULT_TIMEOUT,
     DEFAULT_TTS_MAX_CHARS,
@@ -192,6 +194,12 @@ class HermesOptionsFlow(config_entries.OptionsFlow):
                         CONF_TTS_MAX_CHARS,
                         default=current.get(CONF_TTS_MAX_CHARS, DEFAULT_TTS_MAX_CHARS),
                     ): vol.All(int, vol.Range(min=0, max=2000)),
+                    vol.Optional(
+                        CONF_SESSION_IDLE_MINUTES,
+                        default=current.get(
+                            CONF_SESSION_IDLE_MINUTES, DEFAULT_SESSION_IDLE_MINUTES
+                        ),
+                    ): vol.All(int, vol.Range(min=0, max=720)),
                 }
             ),
             errors=errors,
