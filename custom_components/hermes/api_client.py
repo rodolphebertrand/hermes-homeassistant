@@ -27,11 +27,19 @@ class HermesApiClient:
         port: int,
         api_key: str | None,
         timeout: int,
+        agent: str | None = None,
     ) -> None:
         self._hass = hass
         self._base_url = f"http://{host}:{port}"
         self._api_key = api_key
         self._timeout = timeout
+        self._agent = (agent or "").strip()
+        # "default" (or empty) = no /p/<agent>/ prefix (gateway main profile).
+        self._prefix = f"/p/{self._agent}" if self._agent and self._agent != "default" else ""
+
+    @property
+    def _api_url(self) -> str:
+        return f"{self._base_url}{self._prefix}"
 
     @property
     def _headers(self) -> dict[str, str]:
@@ -45,7 +53,7 @@ class HermesApiClient:
         try:
             async with aiohttp.ClientSession() as session:
                 async with session.get(
-                    f"{self._base_url}/health",
+                    f"{self._api_url}/health",
                     headers=self._headers,
                     timeout=aiohttp.ClientTimeout(total=10),
                 ) as resp:
@@ -94,7 +102,7 @@ class HermesApiClient:
         try:
             async with aiohttp.ClientSession() as session:
                 async with session.post(
-                    f"{self._base_url}/v1/chat/completions",
+                    f"{self._api_url}/v1/chat/completions",
                     headers=self._headers,
                     json=payload,
                     timeout=aiohttp.ClientTimeout(total=self._timeout),
